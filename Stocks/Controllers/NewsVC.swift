@@ -30,8 +30,7 @@ class NewsVC: UIViewController {
          }
       }
    }
-   private var stories = [NewsStory]()
-   
+   private var stories = [NewsStory]()   
    
    // MARK: - Init
    init(type: Type) {

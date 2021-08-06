@@ -10,7 +10,6 @@ import FloatingPanel
 
 class WatchListVC: UIViewController {
    private var searchTimer: Timer?
-   private var panel: FloatingPanelController?
    static var maxChangeWidth: CGFloat = 0
    // Model objects
    private var watchlistMap: [String: [CandleStick]] = [:]
@@ -36,8 +35,7 @@ class WatchListVC: UIViewController {
       setupSearchController()
       setupFloatingPanel()
       setupObserver()
-      // Child ViewController Example:
-//      setupChild()
+//      setupChild() - Child ViewController Example
    }
    
    override func viewDidLayoutSubviews() {
@@ -90,7 +88,7 @@ class WatchListVC: UIViewController {
       var viewModels = [WatchListTableViewCell.ViewModel]()
       
       for (symbol, candleSticks) in watchlistMap {
-         let changePercentage = getChangePercentage(
+         let changePercentage = Calculators.shared.getChangePercentage(
             symbol: symbol,
             data: candleSticks)
          
@@ -98,34 +96,16 @@ class WatchListVC: UIViewController {
             .init(
                symbol: symbol,
                companyName: UserDefaults.standard.string(forKey: symbol) ?? "Company",
-               price: getLatestClosingPrice(from: candleSticks),
+               price: Calculators.shared.getLatestClosingPrice(from: candleSticks),
                changeColor: changePercentage < 0 ? .systemRed : .systemGreen,
                changePercentage: .percentage(from: changePercentage),
                chartViewModel: .init(
                   data: candleSticks.reversed().map{ $0.close },
                   showLegend: false,
-                  showAxis: false)))
+                  showAxis: false,
+                  fillColor: changePercentage < 0 ? .systemRed : .systemGreen)))
       }
       self.viewModels = viewModels
-   }
-   
-   private func getChangePercentage(symbol: String, data: [CandleStick]) -> Double {
-//      let priorDate = Date().addingTimeInterval(-(3600 * 24 * 2))
-      let latestDate = data[0].date
-      
-      guard let latestClose = data.first?.close,
-            let priorClose = data.first(where: {
-               !Calendar.current.isDate($0.date, inSameDayAs: latestDate)
-            })?.close else {
-         return 0
-      }
-      let difference = 1 - (priorClose / latestClose)
-      return difference
-   }
-   
-   private func getLatestClosingPrice(from data: [CandleStick]) -> String {
-      guard let closingPrice = data.first?.close else { return "" }
-      return String.formatted(number: closingPrice)
    }
    
    private func setupSearchController() {
@@ -173,9 +153,9 @@ extension WatchListVC: UISearchResultsUpdating {
             let resultsVC = searchController.searchResultsController as? SearchResultsVC,
             !query.trimmingCharacters(in: .whitespaces).isEmpty else { return }
       
-      searchTimer?.invalidate() // Resets the timer
-      // Optimize to reduce number of searches when the user stops typing
-      searchTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false, block: { _ in
+      searchTimer?.invalidate()
+      // Optimized to reduce number of searches when the user stops typing
+      searchTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { _ in
          APICaller.shared.search(query: query) { result in
             switch result {
             case .success(let response):
@@ -190,7 +170,7 @@ extension WatchListVC: UISearchResultsUpdating {
                print(error)
             }
          }
-      })
+      }
    }
 }
 
@@ -242,8 +222,6 @@ extension WatchListVC: UITableViewDelegate, UITableViewDataSource {
    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
       if editingStyle == .delete {
          tableView.beginUpdates()
-         
-         // Update persistence
          PersistenceManager.shared.removeFromWatchList(symbol: viewModels[indexPath.row].symbol)
          
          // Update viewModels
@@ -251,14 +229,12 @@ extension WatchListVC: UITableViewDelegate, UITableViewDataSource {
          
          // Delete row
          tableView.deleteRows(at: [indexPath], with: .automatic)
-         
          tableView.endUpdates()
       }
    }
    
    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
       tableView.deselectRow(at: indexPath, animated: true)
-      // Open details for selection
       let viewModel = viewModels[indexPath.row]
       let vc = StockDetailsVC(
          symbol: viewModel.symbol,

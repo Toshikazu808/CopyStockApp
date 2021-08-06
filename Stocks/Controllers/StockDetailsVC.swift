@@ -137,11 +137,15 @@ class StockDetailsVC: UIViewController {
          viewModels.append(.init(name: "10D Volume", value: "\(metrics.TenDayAverageTradingVolume)"))
       }
       
+      let change = Calculators.shared.getChangePercentage(
+         symbol: symbol,
+         data: candleStickData)
       headerView.configure(
          chartViewModel: .init(
             data: candleStickData.reversed().map { $0.close },
             showLegend: true,
-            showAxis: true),
+            showAxis: true,
+            fillColor: change < 0 ? .systemRed : .systemGreen),
          metricViewModels: viewModels)
       
       tableView.tableHeaderView = headerView
