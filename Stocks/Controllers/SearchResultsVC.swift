@@ -11,6 +11,7 @@ protocol SearchResultsVCDelegate: AnyObject {
    func searchResultsVCDidSelect(searchResult: SearchResult)
 }
 
+/// Child controller for WatchListVC
 class SearchResultsVC: UIViewController {
    weak var delegate: SearchResultsVCDelegate?
    private var results: [SearchResult] = []

@@ -8,13 +8,19 @@
 import UIKit
 import SafariServices
 
+/// Child controller for WatchListVC
+/// Contained in FloatingPanelController()
 class NewsVC: UIViewController {
    // MARK: - Properties
-   let tableView: UITableView = { // this is called an anonymous closure
+   let tableView: UITableView = {
       let table = UITableView()
       table.backgroundColor = .clear
-      table.register(NewsStoryTableViewCell.self, forCellReuseIdentifier: NewsStoryTableViewCell.identifier)
-      table.register(NewsHeaderView.self, forHeaderFooterViewReuseIdentifier: NewsHeaderView.identifier)
+      table.register(
+         NewsStoryTableViewCell.self,
+         forCellReuseIdentifier: NewsStoryTableViewCell.identifier)
+      table.register(
+         NewsHeaderView.self,
+         forHeaderFooterViewReuseIdentifier: NewsHeaderView.identifier)
       return table
    }()
    private let type: Type
@@ -30,7 +36,8 @@ class NewsVC: UIViewController {
          }
       }
    }
-   private var stories = [NewsStory]()   
+   private var stories = [NewsStory]()
+   var dataFetchers = DataFetchers()
    
    // MARK: - Init
    init(type: Type) {
@@ -45,8 +52,10 @@ class NewsVC: UIViewController {
    // MARK: - Lifecycle
    override func viewDidLoad() {
       super.viewDidLoad()
+      dataFetchers.delegateNews = self
       setupTable()
-      fetchNews()
+//      fetchNews()
+      dataFetchers.fetchNews(type: type)
    }
    
    override func viewDidLayoutSubviews() {
@@ -61,25 +70,18 @@ class NewsVC: UIViewController {
       tableView.dataSource = self
    }
    
-   private func fetchNews() {
-      APICaller.shared.news(for: type) { [weak self] result in
-         switch result {
-         case .success(let stories):
-            DispatchQueue.main.async {
-               self?.stories = stories
-               self?.tableView.reloadData()
-            }            
-         case.failure(let error):
-            print(error)
-         }
-      }
-   }
-   
    private func open(url: URL) {
       let vc = SFSafariViewController(url: url)
       present(vc, animated: true)
    }
    
+}
+
+extension NewsVC: DataFetchersDelegateNews {
+   func updateUI(from stories: [NewsStory]) {
+      self.stories = stories
+      tableView.reloadData()
+   }
 }
 
 extension NewsVC: UITableViewDelegate, UITableViewDataSource {
@@ -117,7 +119,6 @@ extension NewsVC: UITableViewDelegate, UITableViewDataSource {
    
    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
       tableView.deselectRow(at: indexPath, animated: true)
-      // Open news story
       let story = stories[indexPath.row]
       guard let url = URL(string: story.url) else {
          presentFailedToOpenAlert()

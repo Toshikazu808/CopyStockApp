@@ -27,6 +27,8 @@ class StockDetailsVC: UIViewController {
    
    private var stories: [NewsStory] = []
    private var metrics: Metrics?
+   var dataFetchers = DataFetchers()
+//   private let type: Constants.NewsType
    
    // MARK: - Init
    init(symbol: String, companyName: String, candleStickData: [CandleStick] = []) {
@@ -44,11 +46,13 @@ class StockDetailsVC: UIViewController {
    override func viewDidLoad() {
       super.viewDidLoad()
       view.backgroundColor = .systemBackground
+      dataFetchers.delegateNews = self
       title = companyName
       setupCloseButton()
       setupTable()
       fetchFinancialData()
       fetchNews()
+//      dataFetchers.fetchNews(type: type)
    }
    
    override func viewDidLayoutSubviews() {
@@ -100,6 +104,7 @@ class StockDetailsVC: UIViewController {
             }
          }
       }
+      
       group.enter()
       APICaller.shared.financialMetrics(
          for: symbol) { [weak self] result in
@@ -114,6 +119,7 @@ class StockDetailsVC: UIViewController {
             print(error)
          }
       }
+      
       group.notify(queue: .main) { [weak self] in
          self?.renderChart()
       }
@@ -164,7 +170,13 @@ class StockDetailsVC: UIViewController {
          }
       }
    }
-   
+}
+
+extension StockDetailsVC: DataFetchersDelegateNews {
+   func updateUI(from stories: [NewsStory]) {
+      self.stories = stories
+      tableView.reloadData()
+   }
 }
 
 extension StockDetailsVC: UITableViewDelegate, UITableViewDataSource {

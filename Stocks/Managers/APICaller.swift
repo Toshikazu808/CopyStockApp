@@ -11,9 +11,9 @@ final class APICaller {
    private init() {}
    static let shared = APICaller()
    private struct Constants {
-      static let apiKey = ""
-      static let sandboxApiKey = ""
-      static let baseUrl = ""
+      static let apiKey = "c44oruaad3i82cb9t7b0"
+      static let sandboxApiKey = "sandbox_c44oruaad3i82cb9t7bg"
+      static let baseUrl = "https://finnhub.io/api/v1/"
       static let day: TimeInterval = 60 * 60 * 24 // seconds
    }
    
@@ -29,9 +29,9 @@ final class APICaller {
          completion: completion)
    }
    
-   public func news(for type: NewsVC.`Type`, completion: @escaping (Result<[NewsStory], Error>) -> Void) {
+   public func news(for newsType: NewsVC.`Type`, completion: @escaping (Result<[NewsStory], Error>) -> Void) {
       print("\n\(#function)")
-      switch type {
+      switch newsType {
       case .topStories:
          let url = url(
             for: .topStories,

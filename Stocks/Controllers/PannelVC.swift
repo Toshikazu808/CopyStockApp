@@ -9,6 +9,7 @@ import UIKit
 
 class PannelVC: UIViewController {
    // Child ViewController Example
+   // This app uses FloatingPanelController() instead
    override func viewDidLoad() {
       super.viewDidLoad()
       let grabberView = UIView(frame: CGRect(x: 0, y: 0, width: 100, height: 10))

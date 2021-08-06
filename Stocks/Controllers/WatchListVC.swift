@@ -24,14 +24,17 @@ class WatchListVC: UIViewController {
       return table
    }()
    private var observer: NSObjectProtocol?
+   var dataFetchers = DataFetchers()
    
    // MARK: - Lifecycle
    override func viewDidLoad() {
       super.viewDidLoad()
       view.backgroundColor = .systemBackground
+      dataFetchers.delegateWatchList = self
+      
       setupTitleView()
       setupTableView()
-      fetchWatchlistData()
+      dataFetchers.fetchWatchlistData(using: watchlistMap)
       setupSearchController()
       setupFloatingPanel()
       setupObserver()
@@ -57,31 +60,6 @@ class WatchListVC: UIViewController {
       view.addSubview(tableView)
       tableView.delegate = self
       tableView.dataSource = self
-   }
-   
-   private func fetchWatchlistData() {
-      let symbols = PersistenceManager.shared.watchList
-      let group = DispatchGroup()
-      
-      for symbol in symbols where watchlistMap[symbol] == nil {
-         group.enter()
-         APICaller.shared.marketData(for: symbol) { [weak self] result in
-            defer {
-               group.leave()
-            }
-            switch result {
-            case .success(let data):
-               let candleSticks = data.candleSticks
-               self?.watchlistMap[symbol] = candleSticks
-            case .failure(let error):
-               print(error)
-            }
-         }
-      }
-      group.notify(queue: .main) { [weak self] in
-         self?.createViewModels()
-         self?.tableView.reloadData()
-      }
    }
    
    private func createViewModels() {
@@ -133,7 +111,7 @@ class WatchListVC: UIViewController {
          queue: .main,
          using: { [weak self] _ in
             self?.viewModels.removeAll()
-            self?.fetchWatchlistData()
+            self?.dataFetchers.fetchWatchlistData(using: self!.watchlistMap)
          })
    }
    
@@ -144,6 +122,19 @@ class WatchListVC: UIViewController {
 //      vc.view.frame = CGRect(x: 0, y: view.height / 2, width: view.width, height: view.height)
 //      vc.didMove(toParent: self)
 //   }
+}
+
+extension WatchListVC: DataFetchersDelegateWatchList {
+   func updateWatchlist(from candleSticks: [CandleStick], and symbol: String) {
+      print(#function)
+      watchlistMap[symbol] = candleSticks
+   }
+   
+   func updateUI() {
+      print(#function)
+      createViewModels()
+      tableView.reloadData()
+   }
 }
 
 extension WatchListVC: UISearchResultsUpdating {
@@ -227,7 +218,6 @@ extension WatchListVC: UITableViewDelegate, UITableViewDataSource {
          // Update viewModels
          viewModels.remove(at: indexPath.row)
          
-         // Delete row
          tableView.deleteRows(at: [indexPath], with: .automatic)
          tableView.endUpdates()
       }
