@@ -14,16 +14,75 @@ final class APICaller {
       static let apiKey = ""
       static let sandboxApiKey = ""
       static let baseUrl = ""
+      static let day: TimeInterval = 60 * 60 * 24 // seconds
    }
    
    // MARK: - Public
    public func search(query: String, completion: @escaping(Result<SearchResponse, Error>) -> Void) {
       guard let safeQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
-      request(url: url(for: .search, queryParams: ["q":safeQuery]), expecting: SearchResponse.self, completion: completion)
+      let url = url(
+         for: .search,
+         queryParams: ["q": safeQuery])
+      request(
+         url: url,
+         expecting: SearchResponse.self,
+         completion: completion)
    }
    
-   // Get stock info
+   public func news(for type: NewsVC.`Type`, completion: @escaping (Result<[NewsStory], Error>) -> Void) {
+      print("\n\(#function)")
+      switch type {
+      case .topStories:
+         let url = url(
+            for: .topStories,
+            queryParams: ["categories": "general"])
+         request(
+            url: url,
+            expecting: [NewsStory].self,
+            completion: completion)
+      case .company(let symbol):
+         let today = Date()
+         let oneMonthBack = today.addingTimeInterval(-(Constants.day * 7)) // units are in seconds
+         let url = url(
+            for: .companyNews,
+            queryParams: [
+               "symbol": symbol,
+               "from": DateFormatter.newsDateFormatter.string(from: oneMonthBack),
+               "to": DateFormatter.newsDateFormatter.string(from: today)
+            ])
+         request(
+            url: url,
+            expecting: [NewsStory].self,
+            completion: completion)
+      }
+   }
    
+   public func marketData( for symbol: String, numberOfDays: TimeInterval = 7, completion: @escaping(Result<MarketDataResponse, Error>) -> Void) {
+      print("\n\(#function)")
+      let today = Date().addingTimeInterval(-(Constants.day))
+      let prior = today.addingTimeInterval(-(Constants.day * numberOfDays))
+      let url = url(
+         for: .marketData,
+         queryParams: [
+            "symbol": symbol,
+            "resolution": "1",
+            "from": "\(Int(prior.timeIntervalSince1970))",
+            "to": "\(Int(today.timeIntervalSince1970))"])
+      request(
+         url: url,
+         expecting: MarketDataResponse.self,
+         completion: completion)
+   }
+   
+   public func financialMetrics(for symbol: String, completion: @escaping (Result<FinancialMetricsResponse, Error>) -> Void) {
+      let url = url(
+         for: .financials,
+         queryParams: ["symbol": symbol, "metric": "all"])
+      request(
+         url: url,
+         expecting: FinancialMetricsResponse.self,
+         completion: completion)
+   }
    // Search stocks
    
    
@@ -31,6 +90,10 @@ final class APICaller {
    
    private enum Endpoint: String {
       case search
+      case topStories = "news"
+      case companyNews = "company-news"
+      case marketData = "stock/candle"
+      case financials = "stock/metric"
    }
    
    private enum APIError: Error {
@@ -48,9 +111,7 @@ final class APICaller {
       queryItems.append(.init(name: "token", value: Constants.apiKey))
       
       // Convert query itmes to suffix string
-      urlString += "?" + queryItems.map { "\($0.name)=\($0.value ?? "")" }.joined(separator: "&")
-      print("\n\(urlString)\n")
-      
+      urlString += "?" + queryItems.map { "\($0.name)=\($0.value ?? "")" }.joined(separator: "&")      
       return URL(string: urlString)
    }
    
@@ -59,6 +120,7 @@ final class APICaller {
          completion(.failure(APIError.invalidUrl))
          return
       }
+      print(url)
       let task = URLSession.shared.dataTask(with: url) { data, response, error in
          guard let data = data, error == nil else {
             if let error = error {

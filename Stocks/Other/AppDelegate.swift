@@ -10,8 +10,7 @@ import UIKit
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-      debug()
-      
+      debug()      
       return true
    }
 
@@ -25,8 +24,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
       
    }
 
+   // MARK: - Testing API calls upon launch
    private func debug() {
+//      APICaller.shared.news(for: .company(symbol: "AAPL")) { result in
+//         print(result)
+//         switch result {
+//         case .success(let news):
+//            print(news.count)
+//         case .failure(let error):
+//            print(error)
+//         }
+//      }
       
+//      APICaller.shared.marketData(for: "AAPL", numberOfDays: 1) { result in
+//         print(result)
+//         switch result {
+//         case .success(let data):
+//            let candleSticks = data.candleSticks
+//         case .failure(let error):
+//            print(error)
+//         }
+//      }
    }
 }
 
