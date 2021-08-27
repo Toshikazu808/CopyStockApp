@@ -11,9 +11,6 @@ final class APICaller {
    private init() {}
    static let shared = APICaller()
    private struct Constants {
-      static let apiKey = ""
-      static let sandboxApiKey = ""
-      static let baseUrl = ""
       static let day: TimeInterval = 60 * 60 * 24 // seconds
    }
    
@@ -102,13 +99,13 @@ final class APICaller {
    }
    
    private func url(for endpoint: Endpoint, queryParams: [String: String] = [:] ) -> URL? {
-      var urlString = Constants.baseUrl + endpoint.rawValue
+      var urlString = Keys.baseUrl + endpoint.rawValue
       var queryItems = [URLQueryItem]()
       for (key, value) in queryParams { // Add any parameters
          queryItems.append(.init(name: key, value: value))
       }
       // Add token
-      queryItems.append(.init(name: "token", value: Constants.apiKey))
+      queryItems.append(.init(name: "token", value: Keys.apiKey))
       
       // Convert query itmes to suffix string
       urlString += "?" + queryItems.map { "\($0.name)=\($0.value ?? "")" }.joined(separator: "&")      
